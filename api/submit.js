@@ -18,7 +18,7 @@ module.exports = async function handler(req, res) {
     email,
     isbns,
     paid: false,
-    stripe: "blocked",
+    stripe: "unpaid_queue",
     queue: "manual_fill"
   };
   console.log("flipisbn_submit", JSON.stringify(rec));
@@ -28,5 +28,5 @@ module.exports = async function handler(req, res) {
     fs.appendFileSync(path.join(dir, "submissions.jsonl"), JSON.stringify(rec) + "\n");
   } catch (_) {}
   res.setHeader("content-type", "application/json");
-  res.end(JSON.stringify({ ok: true, queued: true, paid: false, stripe: "blocked" }));
+  res.end(JSON.stringify({ ok: true, queued: true, paid: false }));
 };

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Thanks — FlipISBN</title>
+  <style>
+    body { font-family: Georgia, serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #111; }
+    .ok { color: #060; }
+    .err { color: #a00; }
+    a { color: inherit; }
+  </style>
+</head>
+<body>
+  <p>FlipISBN</p>
+  <h1>Thanks.</h1>
+  <p id="msg">Checking payment…</p>
+  <p><a href="/">Back</a></p>
+<script>
+const params = new URLSearchParams(location.search);
+const sessionId = params.get("session_id") || "";
+const msg = document.getElementById("msg");
+(async () => {
+  if (!sessionId) {
+    msg.className = "err";
+    msg.textContent = "No payment session. If you paid, email stevie@seoulwebdesign.com.";
+    return;
+  }
+  try {
+    const r = await fetch("/api/confirm?session_id=" + encodeURIComponent(sessionId));
+    const data = await r.json();
+    if (data && data.paid) {
+      msg.className = "ok";
+      msg.textContent = "Payment received. We'll send the keep-or-list sheet to " + (data.email || "your email") + ". eBay sold and buyback are filled by hand. We never invent sold prices.";
+      return;
+    }
+  } catch (_) {}
+  msg.className = "err";
+  msg.textContent = "We could not confirm that payment. Email stevie@seoulwebdesign.com if you were charged.";
+})();
+</script>
+</body>
+</html>

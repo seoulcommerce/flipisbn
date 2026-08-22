@@ -6,12 +6,16 @@ Not a Seoul Commerce Magento/Shopify product.
 
 ## How it works
 1. Paste up to 25 ISBNs + email
-2. Pay $15 (Stripe Checkout — blocked until keys are authorized)
-3. Get a sheet: title from Google Books now; eBay sold median and buyback max stay `needs_manual` until those APIs have keys. We never invent sold prices.
+2. Pay $15 via live Stripe Checkout
+3. Thanks page. We queue email + ISBNs and send the keep-or-list sheet. eBay sold / buyback stay manual. We never invent sold prices.
+
+## Stripe (Vercel env only)
+Do not put keys in git or chat.
+
+- `STRIPE_SECRET_KEY` (must be `sk_live_…`)
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (must be `pk_live_…`)
+
+Then redeploy. The public Pay $15 button stays off if either key is missing or test-mode.
 
 ## Run
-Static `index.html`. Optional Vercel functions in `api/` for submit log + hit log.
-
-## Blocked
-- Stripe: no live keys in the environment. Do not fake charges.
-- eBay sold / BookScouter buyback: no keys. First reports are concierge.
+Static `index.html` + `thanks.html`. Vercel functions in `api/`.
