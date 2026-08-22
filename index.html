@@ -3,64 +3,162 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Keep or list. 25 ISBNs. One sheet.</title>
+  <title>FlipISBN</title>
+  <meta name="description" content="Keep or list. 25 ISBNs. One sheet. $15.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <style>
-    body { font-family: Georgia, serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #111; }
-    h1 { font-size: 1.7rem; margin-bottom: 0.35rem; }
-    .brand { font-size: 0.85rem; color: #555; margin: 0 0 0.5rem; }
-    .sub { font-size: 1.1rem; }
-    label { display: block; margin-top: 1rem; font-weight: 600; }
-    input, textarea { width: 100%; box-sizing: border-box; padding: 0.5rem; font: inherit; }
-    textarea { min-height: 8rem; }
-    button { margin-top: 1rem; padding: 0.6rem 1rem; font: inherit; cursor: pointer; }
-    button:disabled { cursor: not-allowed; opacity: 0.6; }
-    .pay { background: #eee; padding: 0.75rem; margin-top: 1rem; }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.85rem; }
-    th, td { border: 1px solid #ccc; padding: 0.35rem; text-align: left; vertical-align: top; }
-    .muted { color: #555; font-size: 0.9rem; }
-    footer { margin-top: 3rem; border-top: 1px solid #ddd; padding-top: 1rem; font-size: 0.85rem; }
-    .err { color: #a00; }
-    .ok { color: #060; }
-    .price { font-weight: 700; }
+    :root {
+      --ink: #141414;
+      --paper: #f6f3ec;
+      --card: #fffdf8;
+      --line: #d9d2c5;
+      --muted: #5c574e;
+      --pay: #c45c26;
+      --pay-ink: #fffdf8;
+      --ok: #1b6b3a;
+      --err: #a1271c;
+      --sample: #8a6a12;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+    header {
+      display: flex; align-items: center; gap: 0.7rem;
+      padding: 0.4rem 0 1.25rem;
+    }
+    .mark { width: 36px; height: 36px; flex: none; }
+    .word { font-weight: 750; letter-spacing: -0.03em; font-size: 1.15rem; }
+    h1 { font-size: clamp(1.7rem, 5vw, 2.25rem); letter-spacing: -0.035em; line-height: 1.15; margin: 0 0 0.7rem; }
+    .sub { font-size: 1.05rem; color: var(--muted); margin: 0 0 1.1rem; }
+    ul { margin: 0 0 1.25rem; padding-left: 1.15rem; }
+    li { margin: 0.4rem 0; }
+    .how { font-weight: 700; margin: 0 0 0.4rem; }
+    ol { margin: 0 0 1rem; padding-left: 1.2rem; }
+    .price {
+      display: inline-block; font-weight: 750; font-size: 1.05rem;
+      background: #efe6d4; border-radius: 999px; padding: 0.35rem 0.75rem; margin: 0 0 1.25rem;
+    }
+    .sample {
+      background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+      padding: 0.9rem; margin: 0 0 1.25rem; overflow-x: auto;
+    }
+    .sample-label {
+      display: inline-block; font-size: 0.72rem; font-weight: 750; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--sample); background: #f3e5b3;
+      border-radius: 999px; padding: 0.15rem 0.5rem; margin-bottom: 0.55rem;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    th, td { text-align: left; padding: 0.45rem 0.4rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 650; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .verdict { font-weight: 750; }
+    .card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+      padding: 1.1rem;
+    }
+    label { display: block; font-weight: 650; margin: 0.85rem 0 0.35rem; }
+    label:first-child { margin-top: 0; }
+    input, textarea {
+      width: 100%; font: inherit; padding: 0.7rem 0.75rem;
+      border: 1px solid var(--line); border-radius: 10px; background: #fff;
+    }
+    textarea { min-height: 8.5rem; resize: vertical; }
+    .muted { color: var(--muted); font-size: 0.88rem; }
+    .paynote { color: var(--muted); font-size: 0.9rem; margin: 0.7rem 0 0; }
+    .btn {
+      display: block; width: 100%; margin-top: 1rem; border: 0; cursor: pointer;
+      background: var(--pay); color: var(--pay-ink); font: inherit; font-weight: 750;
+      font-size: 1.05rem; padding: 0.9rem 1rem; border-radius: 12px;
+    }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-ghost {
+      background: transparent; color: var(--ink); border: 1px solid var(--line); width: auto;
+      display: inline-block; padding: 0.5rem 0.8rem; font-size: 0.9rem; margin-top: 0.7rem;
+    }
+    .err { color: var(--err); }
+    .ok { color: var(--ok); }
+    #status { min-height: 1.3em; margin: 0.7rem 0 0; }
+    #out { margin-top: 1rem; overflow-x: auto; }
+    footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }
+    footer a { color: inherit; }
+    @media (max-width: 520px) {
+      .wrap { padding: 0.9rem 0.85rem 2.5rem; }
+      table { font-size: 0.78rem; }
+    }
   </style>
 </head>
 <body>
-  <p class="brand">FlipISBN</p>
-  <h1>Keep or list. 25 ISBNs. One sheet.</h1>
-  <p class="sub">Stop bouncing ScoutIQ, BookScouter, and eBay sold for every book in the crate.</p>
-  <ul>
-    <li>You already pay for a scanner. You still open buyback and eBay sold before you decide. This is that third look, in a batch.</li>
-    <li>25 ISBNs in. Keep or list on each, with eBay sold and buyback on the same line.</li>
-    <li>$15. One report. Not a subscription.</li>
-  </ul>
-  <p><strong>How it works</strong></p>
-  <ol>
-    <li>Paste up to 25 ISBNs.</li>
-    <li>Pay $15.</li>
-    <li>Get the keep-or-list sheet.</li>
-  </ol>
-  <p class="price">$15 for 25 ISBNs. No free trial. No monthly.</p>
+  <div class="wrap">
+    <header>
+      <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" rx="14" fill="#141414"/>
+        <path d="M14 16h16c6 0 10 3 10 8v28c-4-3-8-4-10-4H14V16z" fill="#f4f1ea"/>
+        <path d="M50 16H34c-6 0-10 3-10 8v28c4-3 8-4 10-4h16V16z" fill="#e4c7a3"/>
+        <rect x="38" y="22" width="2" height="16" fill="#141414"/>
+        <rect x="42" y="22" width="1.5" height="16" fill="#141414"/>
+        <rect x="45.5" y="22" width="3" height="16" fill="#141414"/>
+        <rect x="50" y="22" width="1.5" height="16" fill="#141414"/>
+      </svg>
+      <div class="word">FlipISBN</div>
+    </header>
 
-  <p class="pay" id="paynote">Pay $15 after you paste ISBNs. First reports are filled by hand. We never invent sold prices.</p>
+    <h1>Keep or list. 25 ISBNs. One sheet.</h1>
+    <p class="sub">Stop bouncing ScoutIQ, BookScouter, and eBay sold for every book in the crate.</p>
+    <ul>
+      <li>You already pay for a scanner. You still open buyback and eBay sold before you decide. This is that third look, in a batch.</li>
+      <li>25 ISBNs in. Keep or list on each, with eBay sold and buyback on the same line.</li>
+      <li>$15. One report. Not a subscription.</li>
+    </ul>
+    <p class="how">How it works</p>
+    <ol>
+      <li>Paste up to 25 ISBNs.</li>
+      <li>Pay $15.</li>
+      <li>Get the keep-or-list sheet.</li>
+    </ol>
+    <p class="price">$15 for 25 ISBNs. No free trial. No monthly.</p>
 
-  <form id="f">
-    <label for="email">Email</label>
-    <input id="email" name="email" type="email" required placeholder="you@example.com">
+    <div class="sample">
+      <div class="sample-label">Sample row · not a real sale</div>
+      <table>
+        <thead>
+          <tr><th>ISBN</th><th>Title</th><th>eBay sold median</th><th>buyback max</th><th>verdict</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>9780143127741</td>
+            <td>Title from the sheet</td>
+            <td>SAMPLE</td>
+            <td>SAMPLE</td>
+            <td class="verdict">LIST</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-    <label for="isbns">Paste your ISBNs</label>
-    <textarea id="isbns" name="isbns" required placeholder="9780143127741"></textarea>
-    <p class="muted" id="count">0 / 25</p>
+    <form class="card" id="f">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" required placeholder="you@example.com" autocomplete="email">
 
-    <button type="submit" id="go">Pay $15</button>
-  </form>
-  <p id="status" class="muted"></p>
-  <div id="out"></div>
+      <label for="isbns">Paste your ISBNs</label>
+      <textarea id="isbns" name="isbns" required placeholder="9780143127741"></textarea>
+      <p class="muted" id="count">0 / 25</p>
 
-  <footer>
-    <p>Privacy: we store your email and the ISBNs you paste so we can build this report. We do not sell your list.</p>
-    <p>Contact: <a href="mailto:stevie@seoulwebdesign.com">stevie@seoulwebdesign.com</a></p>
-    <p class="muted">Views: <img alt="views" src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https://seoulcommerce.github.io/flipisbn&amp;title_bg=%23000&amp;count_bg=%23000&amp;title=views&amp;edge_flat=false"></p>
-  </footer>
+      <button class="btn" type="submit" id="go">Pay $15</button>
+      <p class="paynote" id="paynote">Pay $15 after you paste ISBNs. First reports are filled by hand. We never invent sold prices.</p>
+    </form>
+    <p id="status" class="muted"></p>
+    <div id="out"></div>
+
+    <footer>
+      <p>Privacy: we store your email and the ISBNs you paste so we can build this report. We do not sell your list.</p>
+      <p>Contact: <a href="mailto:stevie@seoulwebdesign.com">stevie@seoulwebdesign.com</a></p>
+    </footer>
+  </div>
 
 <script>
 const ta = document.getElementById("isbns");
@@ -118,10 +216,10 @@ function renderTable(rows) {
     "<table><thead><tr><th>ISBN</th><th>Title</th><th>eBay sold median</th><th>buyback max</th><th>verdict</th></tr></thead><tbody>"
   ];
   for (const row of rows) {
-    html.push("<tr><td>" + row.isbn + "</td><td>" + (row.title || "\u2014") + "</td><td>" + row.ebay + "</td><td>" + row.buyback + "</td><td>" + row.verdict + "</td></tr>");
+    html.push("<tr><td>" + row.isbn + "</td><td>" + (row.title || "\u2014") + "</td><td>" + row.ebay + "</td><td>" + row.buyback + "</td><td class=\"verdict\">" + row.verdict + "</td></tr>");
   }
   html.push("</tbody></table>");
-  html.push('<p><button type="button" id="dl">Download CSV</button></p>');
+  html.push('<button type="button" class="btn btn-ghost" id="dl">Download CSV</button>');
   out.innerHTML = html.join("");
   document.getElementById("dl").onclick = () => {
     const blob = new Blob([rowsToCsv(rows)], { type: "text/csv" });
@@ -156,12 +254,6 @@ async function queueSubmission(payload) {
       })
     });
     if (r.ok) queued = true;
-  } catch (_) {}
-  try {
-    const key = "flipisbn_queue";
-    const prev = JSON.parse(localStorage.getItem(key) || "[]");
-    prev.push({ at: new Date().toISOString(), email: payload.email, isbns: payload.isbns });
-    localStorage.setItem(key, JSON.stringify(prev.slice(-50)));
   } catch (_) {}
   return queued;
 }
@@ -205,7 +297,7 @@ document.getElementById("f").addEventListener("submit", async (e) => {
         return;
       }
       status.className = "err";
-      status.textContent = "Checkout is not live (need sk_live_ and pk_live_ in Vercel). No charge was made.";
+      status.textContent = "Checkout is not live. No charge was made.";
     } catch (_) {
       status.className = "err";
       status.textContent = "Checkout failed. No charge was made.";
@@ -219,20 +311,14 @@ document.getElementById("f").addEventListener("submit", async (e) => {
   for (const isbn of isbns) {
     let title = "";
     try { title = await googleTitle(isbn); } catch (_) {}
-    rows.push({
-      isbn,
-      title,
-      ebay: "needs_manual",
-      buyback: "needs_manual",
-      verdict: "PENDING_MANUAL"
-    });
+    rows.push({ isbn, title, ebay: "needs_manual", buyback: "needs_manual", verdict: "PENDING_MANUAL" });
   }
   const queued = await queueSubmission({ email, isbns, rows, paid: false });
   renderTable(rows);
   status.className = queued ? "ok" : "err";
   status.textContent = queued
-    ? "Queued. Report ready. eBay sold and buyback stay needs_manual. Email stevie@seoulwebdesign.com if you want this batch concierged."
-    : "Report ready on this page, but the email queue did not accept it. Email stevie@seoulwebdesign.com with your ISBNs.";
+    ? "Queued. Report ready. eBay sold and buyback stay needs_manual."
+    : "Report ready on this page, but the email queue did not accept it. Email stevie@seoulwebdesign.com.";
   go.disabled = false;
 });
 </script>
