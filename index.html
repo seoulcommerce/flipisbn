@@ -41,7 +41,7 @@
   </ol>
   <p class="price">$15 for 25 ISBNs. No free trial. No monthly.</p>
 
-  <p class="pay">Stripe checkout is not live yet. Submit the form anyway. First reports are filled by hand. We never invent sold prices. We do not take a card here.</p>
+  <p class="pay" id="paynote">Pay $15 after you paste ISBNs. First reports are filled by hand. We never invent sold prices.</p>
 
   <form id="f">
     <label for="email">Email</label>
@@ -51,7 +51,7 @@
     <textarea id="isbns" name="isbns" required placeholder="9780143127741"></textarea>
     <p class="muted" id="count">0 / 25</p>
 
-    <button type="submit" id="go">Paste your ISBNs</button>
+    <button type="submit" id="go">Pay $15</button>
   </form>
   <p id="status" class="muted"></p>
   <div id="out"></div>
@@ -166,7 +166,20 @@ async function queueSubmission(payload) {
   return queued;
 }
 
-fetch("api/hit.js").catch(function(){});
+let stripeLive = false;
+const paynote = document.getElementById("paynote");
+fetch("/api/hit").catch(function(){});
+fetch("/api/status").then(r => r.json()).then(s => {
+  stripeLive = !!(s && s.live);
+  if (stripeLive) {
+    paynote.textContent = "Live $15 Stripe Checkout. After you pay, we queue your email and ISBNs and send the sheet. We never invent sold prices.";
+    go.textContent = "Pay $15";
+  } else {
+    paynote.textContent = "Stripe live keys are not in Vercel yet. The Pay $15 button will not take a card until they are. You can still queue a batch for concierge.";
+    go.textContent = "Paste your ISBNs";
+  }
+}).catch(function(){});
+
 document.getElementById("f").addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = document.getElementById("email").value.trim();
@@ -177,8 +190,31 @@ document.getElementById("f").addEventListener("submit", async (e) => {
     return;
   }
   go.disabled = true;
+  if (stripeLive) {
+    status.className = "muted";
+    status.textContent = "Opening Stripe Checkout for $15…";
+    try {
+      const r = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email, isbns })
+      });
+      const data = await r.json();
+      if (data && data.url) {
+        location.href = data.url;
+        return;
+      }
+      status.className = "err";
+      status.textContent = "Checkout is not live (need sk_live_ and pk_live_ in Vercel). No charge was made.";
+    } catch (_) {
+      status.className = "err";
+      status.textContent = "Checkout failed. No charge was made.";
+    }
+    go.disabled = false;
+    return;
+  }
   status.className = "muted";
-  status.textContent = "Looking up titles (Google Books). Sold prices stay blank. We do not invent them.";
+  status.textContent = "Looking up titles. Sold prices stay blank. We do not invent them.";
   const rows = [];
   for (const isbn of isbns) {
     let title = "";
@@ -191,7 +227,7 @@ document.getElementById("f").addEventListener("submit", async (e) => {
       verdict: "PENDING_MANUAL"
     });
   }
-  const queued = await queueSubmission({ email, isbns, rows, paid: false, stripe: "blocked" });
+  const queued = await queueSubmission({ email, isbns, rows, paid: false });
   renderTable(rows);
   status.className = queued ? "ok" : "err";
   status.textContent = queued
