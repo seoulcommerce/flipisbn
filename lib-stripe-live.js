@@ -1,8 +1,9 @@
 function liveKeys() {
   const secret = process.env.STRIPE_SECRET_KEY || "";
   const publishable = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
+  // FlipISBN killed 2026-08-23: never report live, never charge.
   return {
-    live: secret.startsWith("sk_live_") && publishable.startsWith("pk_live_"),
+    live: false,
     secret,
     publishable
   };
