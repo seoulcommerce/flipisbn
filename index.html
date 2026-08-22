@@ -3,11 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>FlipISBN — keep or list 25 ISBNs</title>
+  <title>Keep or list. 25 ISBNs. One sheet.</title>
   <style>
     body { font-family: Georgia, serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #111; }
-    h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
-    .offer { font-size: 1.1rem; }
+    h1 { font-size: 1.7rem; margin-bottom: 0.35rem; }
+    .brand { font-size: 0.85rem; color: #555; margin: 0 0 0.5rem; }
+    .sub { font-size: 1.1rem; }
     label { display: block; margin-top: 1rem; font-weight: 600; }
     input, textarea { width: 100%; box-sizing: border-box; padding: 0.5rem; font: inherit; }
     textarea { min-height: 8rem; }
@@ -20,29 +21,37 @@
     footer { margin-top: 3rem; border-top: 1px solid #ddd; padding-top: 1rem; font-size: 0.85rem; }
     .err { color: #a00; }
     .ok { color: #060; }
+    .price { font-weight: 700; }
   </style>
 </head>
 <body>
-  <h1>FlipISBN</h1>
-  <p class="offer">We help US used-book flippers decide keep-or-list on a batch of ISBNs without jumping between ScoutIQ, BookScouter, and eBay sold.</p>
-  <p><strong>$15 USD one-time per 25-ISBN report.</strong></p>
+  <p class="brand">FlipISBN</p>
+  <h1>Keep or list. 25 ISBNs. One sheet.</h1>
+  <p class="sub">Stop bouncing ScoutIQ, BookScouter, and eBay sold for every book in the crate.</p>
+  <ul>
+    <li>You already pay for a scanner. You still open buyback and eBay sold before you decide. This is that third look, in a batch.</li>
+    <li>25 ISBNs in. Keep or list on each, with eBay sold and buyback on the same line.</li>
+    <li>$15. One report. Not a subscription.</li>
+  </ul>
+  <p><strong>How it works</strong></p>
   <ol>
-    <li>Paste up to 25 ISBNs and your email.</li>
-    <li>Pay $15 (Stripe checkout — not live yet, see below).</li>
-    <li>Get a sheet: title lookup now; eBay sold / buyback filled by hand until those APIs are wired. We never invent sold prices.</li>
+    <li>Paste up to 25 ISBNs.</li>
+    <li>Pay $15.</li>
+    <li>Get the keep-or-list sheet.</li>
   </ol>
+  <p class="price">$15 for 25 ISBNs. No free trial. No monthly.</p>
 
-  <p class="pay"><strong>Pay step:</strong> Stripe keys are not authorized. We will not fake a charge. Submit the form anyway — first reports are concierge. When NeoJack authorizes Stripe, this becomes a $15 Checkout session.</p>
+  <p class="pay">Stripe checkout is not live yet. Submit the form anyway. First reports are filled by hand. We never invent sold prices. We do not take a card here.</p>
 
   <form id="f">
     <label for="email">Email</label>
     <input id="email" name="email" type="email" required placeholder="you@example.com">
 
-    <label for="isbns">ISBNs (one per line, max 25)</label>
+    <label for="isbns">Paste your ISBNs</label>
     <textarea id="isbns" name="isbns" required placeholder="9780143127741"></textarea>
     <p class="muted" id="count">0 / 25</p>
 
-    <button type="submit" id="go">Generate report (pay later)</button>
+    <button type="submit" id="go">Paste your ISBNs</button>
   </form>
   <p id="status" class="muted"></p>
   <div id="out"></div>
@@ -109,7 +118,7 @@ function renderTable(rows) {
     "<table><thead><tr><th>ISBN</th><th>Title</th><th>eBay sold median</th><th>buyback max</th><th>verdict</th></tr></thead><tbody>"
   ];
   for (const row of rows) {
-    html.push("<tr><td>" + row.isbn + "</td><td>" + (row.title || "—") + "</td><td>" + row.ebay + "</td><td>" + row.buyback + "</td><td>" + row.verdict + "</td></tr>");
+    html.push("<tr><td>" + row.isbn + "</td><td>" + (row.title || "\u2014") + "</td><td>" + row.ebay + "</td><td>" + row.buyback + "</td><td>" + row.verdict + "</td></tr>");
   }
   html.push("</tbody></table>");
   html.push('<p><button type="button" id="dl">Download CSV</button></p>');
@@ -123,7 +132,41 @@ function renderTable(rows) {
   };
 }
 
-fetch("/api/hit").catch(function(){});
+async function queueSubmission(payload) {
+  let queued = false;
+  try {
+    const r = await fetch("/api/submit", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (r.ok) queued = true;
+  } catch (_) {}
+  try {
+    const r = await fetch("https://formsubmit.co/ajax/stevie@seoulwebdesign.com", {
+      method: "POST",
+      headers: { "content-type": "application/json", "accept": "application/json" },
+      body: JSON.stringify({
+        email: payload.email,
+        isbns: payload.isbns.join("\n"),
+        paid: "false",
+        stripe: "blocked",
+        _subject: "FlipISBN queue",
+        _captcha: "false"
+      })
+    });
+    if (r.ok) queued = true;
+  } catch (_) {}
+  try {
+    const key = "flipisbn_queue";
+    const prev = JSON.parse(localStorage.getItem(key) || "[]");
+    prev.push({ at: new Date().toISOString(), email: payload.email, isbns: payload.isbns });
+    localStorage.setItem(key, JSON.stringify(prev.slice(-50)));
+  } catch (_) {}
+  return queued;
+}
+
+fetch("api/hit.js").catch(function(){});
 document.getElementById("f").addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = document.getElementById("email").value.trim();
@@ -135,7 +178,7 @@ document.getElementById("f").addEventListener("submit", async (e) => {
   }
   go.disabled = true;
   status.className = "muted";
-  status.textContent = "Looking up titles (Google Books). Sold prices stay blank — we do not invent them.";
+  status.textContent = "Looking up titles (Google Books). Sold prices stay blank. We do not invent them.";
   const rows = [];
   for (const isbn of isbns) {
     let title = "";
@@ -148,16 +191,12 @@ document.getElementById("f").addEventListener("submit", async (e) => {
       verdict: "PENDING_MANUAL"
     });
   }
-  try {
-    await fetch("/api/submit", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email, isbns, rows, paid: false })
-    });
-  } catch (_) {}
+  const queued = await queueSubmission({ email, isbns, rows, paid: false, stripe: "blocked" });
   renderTable(rows);
-  status.className = "ok";
-  status.textContent = "Report ready. eBay sold and buyback are a manual-fill queue. Email stevie@seoulwebdesign.com if you want us to concierge this batch.";
+  status.className = queued ? "ok" : "err";
+  status.textContent = queued
+    ? "Queued. Report ready. eBay sold and buyback stay needs_manual. Email stevie@seoulwebdesign.com if you want this batch concierged."
+    : "Report ready on this page, but the email queue did not accept it. Email stevie@seoulwebdesign.com with your ISBNs.";
   go.disabled = false;
 });
 </script>
