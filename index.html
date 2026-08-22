@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FlipISBN — keep or list 25 ISBNs</title>
+  <style>
+    body { font-family: Georgia, serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #111; }
+    h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
+    .offer { font-size: 1.1rem; }
+    label { display: block; margin-top: 1rem; font-weight: 600; }
+    input, textarea { width: 100%; box-sizing: border-box; padding: 0.5rem; font: inherit; }
+    textarea { min-height: 8rem; }
+    button { margin-top: 1rem; padding: 0.6rem 1rem; font: inherit; cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: 0.6; }
+    .pay { background: #eee; padding: 0.75rem; margin-top: 1rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.85rem; }
+    th, td { border: 1px solid #ccc; padding: 0.35rem; text-align: left; vertical-align: top; }
+    .muted { color: #555; font-size: 0.9rem; }
+    footer { margin-top: 3rem; border-top: 1px solid #ddd; padding-top: 1rem; font-size: 0.85rem; }
+    .err { color: #a00; }
+    .ok { color: #060; }
+  </style>
+</head>
+<body>
+  <h1>FlipISBN</h1>
+  <p class="offer">We help US used-book flippers decide keep-or-list on a batch of ISBNs without jumping between ScoutIQ, BookScouter, and eBay sold.</p>
+  <p><strong>$15 USD one-time per 25-ISBN report.</strong></p>
+  <ol>
+    <li>Paste up to 25 ISBNs and your email.</li>
+    <li>Pay $15 (Stripe checkout — not live yet, see below).</li>
+    <li>Get a sheet: title lookup now; eBay sold / buyback filled by hand until those APIs are wired. We never invent sold prices.</li>
+  </ol>
+
+  <p class="pay"><strong>Pay step:</strong> Stripe keys are not authorized. We will not fake a charge. Submit the form anyway — first reports are concierge. When NeoJack authorizes Stripe, this becomes a $15 Checkout session.</p>
+
+  <form id="f">
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" required placeholder="you@example.com">
+
+    <label for="isbns">ISBNs (one per line, max 25)</label>
+    <textarea id="isbns" name="isbns" required placeholder="9780143127741"></textarea>
+    <p class="muted" id="count">0 / 25</p>
+
+    <button type="submit" id="go">Generate report (pay later)</button>
+  </form>
+  <p id="status" class="muted"></p>
+  <div id="out"></div>
+
+  <footer>
+    <p>Privacy: we store your email and the ISBNs you paste so we can build this report. We do not sell your list.</p>
+    <p>Contact: <a href="mailto:stevie@seoulwebdesign.com">stevie@seoulwebdesign.com</a></p>
+    <p class="muted">Views: <img alt="views" src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https://seoulcommerce.github.io/flipisbn&amp;title_bg=%23000&amp;count_bg=%23000&amp;title=views&amp;edge_flat=false"></p>
+  </footer>
+
+<script>
+const ta = document.getElementById("isbns");
+const count = document.getElementById("count");
+const status = document.getElementById("status");
+const out = document.getElementById("out");
+const go = document.getElementById("go");
+
+function parseIsbns(raw) {
+  const seen = new Set();
+  const list = [];
+  for (const line of raw.split(/[\s,;]+/)) {
+    const d = line.replace(/[^0-9Xx]/g, "");
+    if (!d) continue;
+    if (!/^\d{9}[\dXx]$/.test(d) && !/^\d{13}$/.test(d)) continue;
+    const key = d.toUpperCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    list.push(key);
+    if (list.length >= 25) break;
+  }
+  return list;
+}
+
+ta.addEventListener("input", () => {
+  count.textContent = parseIsbns(ta.value).length + " / 25";
+});
+
+async function googleTitle(isbn) {
+  const url = "https://www.googleapis.com/books/v1/volumes?q=isbn:" + encodeURIComponent(isbn);
+  const r = await fetch(url);
+  if (!r.ok) return "";
+  const data = await r.json();
+  const info = data.items && data.items[0] && data.items[0].volumeInfo;
+  return (info && info.title) || "";
+}
+
+function csvEscape(s) {
+  const t = String(s ?? "");
+  if (/[",\n]/.test(t)) return '"' + t.replace(/"/g, '""') + '"';
+  return t;
+}
+
+function rowsToCsv(rows) {
+  const header = ["ISBN","Title","eBay sold median","buyback max","verdict"];
+  const lines = [header.join(",")];
+  for (const row of rows) {
+    lines.push([row.isbn, row.title, row.ebay, row.buyback, row.verdict].map(csvEscape).join(","));
+  }
+  return lines.join("\n");
+}
+
+function renderTable(rows) {
+  const html = [
+    "<table><thead><tr><th>ISBN</th><th>Title</th><th>eBay sold median</th><th>buyback max</th><th>verdict</th></tr></thead><tbody>"
+  ];
+  for (const row of rows) {
+    html.push("<tr><td>" + row.isbn + "</td><td>" + (row.title || "—") + "</td><td>" + row.ebay + "</td><td>" + row.buyback + "</td><td>" + row.verdict + "</td></tr>");
+  }
+  html.push("</tbody></table>");
+  html.push('<p><button type="button" id="dl">Download CSV</button></p>');
+  out.innerHTML = html.join("");
+  document.getElementById("dl").onclick = () => {
+    const blob = new Blob([rowsToCsv(rows)], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "flipisbn-report.csv";
+    a.click();
+  };
+}
+
+fetch("/api/hit").catch(function(){});
+document.getElementById("f").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = document.getElementById("email").value.trim();
+  const isbns = parseIsbns(ta.value);
+  if (!email || !isbns.length) {
+    status.className = "err";
+    status.textContent = "Need an email and at least one valid ISBN.";
+    return;
+  }
+  go.disabled = true;
+  status.className = "muted";
+  status.textContent = "Looking up titles (Google Books). Sold prices stay blank — we do not invent them.";
+  const rows = [];
+  for (const isbn of isbns) {
+    let title = "";
+    try { title = await googleTitle(isbn); } catch (_) {}
+    rows.push({
+      isbn,
+      title,
+      ebay: "needs_manual",
+      buyback: "needs_manual",
+      verdict: "PENDING_MANUAL"
+    });
+  }
+  try {
+    await fetch("/api/submit", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email, isbns, rows, paid: false })
+    });
+  } catch (_) {}
+  renderTable(rows);
+  status.className = "ok";
+  status.textContent = "Report ready. eBay sold and buyback are a manual-fill queue. Email stevie@seoulwebdesign.com if you want us to concierge this batch.";
+  go.disabled = false;
+});
+</script>
+</body>
+</html>

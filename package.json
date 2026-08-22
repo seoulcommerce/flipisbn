@@ -1,0 +1,6 @@
+{
+  "name": "flipisbn",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Keep-or-list 25 ISBNs for US used-book flippers. $15 per report."
+}
