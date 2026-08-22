@@ -15,7 +15,7 @@ Do not put keys in git or chat.
 - `STRIPE_SECRET_KEY` (must be `sk_live_…`)
 - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (must be `pk_live_…`)
 
-Then redeploy. The public Pay $15 button stays off if either key is missing or test-mode.
+Paste those only in the claimed Vercel project, then push `main` to deploy. The public Pay $15 button stays off if either key is missing or test-mode.
 
 ## Run
 Static `index.html` + `thanks.html`. Vercel functions in `api/`.
